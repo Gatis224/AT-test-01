@@ -26,7 +26,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     const formData = new FormData();
     formData.append("file", req.file.buffer, req.file.originalname);
 
-    const n8nUrl = "https://gatiss.app.n8n.cloud/webhook-test/f1efd29f-7e6c-42eb-af85-3df77f7f8633";
+    const n8nUrl = "https://gatiss.app.n8n.cloud/webhook/f1efd29f-7e6c-42eb-af85-3df77f7f8633";
 
     const response = await fetch(n8nUrl, {
       method: "POST",
