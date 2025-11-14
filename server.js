@@ -12,7 +12,7 @@ app.use(cors());
 // === Sagatavo ceļu uz public mapi ===
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-app.use(express.static(path.join(__dirname, "../public")));
+app.use(express.static(path.join(__dirname, "public")));
 
 // === Multer konfigurācija ===
 const storage = multer.memoryStorage();
@@ -20,7 +20,7 @@ const upload = multer({ storage });
 
 // === n8n Webhook URL ===
 const n8nUrl1 = "https://kaliz.app.n8n.cloud/webhook/f1efd29f-7e6c-42eb-af85-3df77f7f8633";
-const n8nUrl2 = "https://augstakatiesa.app.n8n.cloud/webhook-test/b02edf7f-3fe9-49fa-ae2e-0eaba980fa21";
+const n8nUrl2 = "https://augstakatiesa.app.n8n.cloud/webhook/b02edf7f-3fe9-49fa-ae2e-0eaba980fa21";
 
 // === Kopīga funkcija failu sūtīšanai uz n8n ===
 async function sendToN8N(req, res, n8nUrl) {
@@ -46,8 +46,8 @@ app.post("/upload1", upload.single("file"), (req, res) => sendToN8N(req, res, n8
 app.post("/upload2", upload.single("file"), (req, res) => sendToN8N(req, res, n8nUrl2));
 
 // === Fallbacks (lai / atgriež index.html) ===
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public", "index.html"));
+app.get("/*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // === Startē serveri ===
