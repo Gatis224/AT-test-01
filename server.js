@@ -46,7 +46,7 @@ app.post("/upload1", upload.single("file"), (req, res) => sendToN8N(req, res, n8
 app.post("/upload2", upload.single("file"), (req, res) => sendToN8N(req, res, n8nUrl2));
 
 // === Fallbacks (lai / atgriež index.html) ===
-app.get("/*", (req, res) => {
+app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
