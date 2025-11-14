@@ -3,13 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <title>PDF uz Excel caur n8n Proxy</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 100px auto;
+      margin: 50px auto;
       text-align: center;
-      max-width: 500px;
+      max-width: 600px;
+      padding: 20px;
     }
+
     .btn {
       background-color: #0078d7;
       color: white;
@@ -24,51 +27,113 @@
     .btn:hover {
       background-color: #005fa3;
     }
-    #status {
-      margin-top: 20px;
-      font-style: italic;
-      color: #555;
+
+    .file-upload-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 15px;
     }
-    .loading {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid #ccc;
-      border-top-color: #0078d7;
+
+    #fileName {
+      font-size: 14px;
+      color: #444;
+    }
+
+    /* Loader */
+    .loader {
+      border: 4px solid #ddd;
+      border-top: 4px solid #0078d7;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      width: 32px;
+      height: 32px;
+      animation: spin 1s linear infinite;
+      margin: auto;
     }
+
     @keyframes spin {
       100% { transform: rotate(360deg); }
     }
+
+    #loading {
+      display: none;
+      margin-top: 20px;
+      font-size: 16px;
+    }
   </style>
 </head>
+
 <body>
+
   <h2>Augšupielādē PDF un izvēlies n8n workflow</h2>
-  <input type="file" id="pdfFile" accept="application/pdf" />
-  <br />
+
+  <!-- Custom file chooser -->
+  <div class="file-upload-wrapper">
+    <label for="pdfFile" class="btn">Izvēlēties failu</label>
+    <input type="file" id="pdfFile" accept="application/pdf" style="display:none" />
+    <span id="fileName">Nav izvēlēts neviens fails</span>
+  </div>
+
+  <!-- Filename input -->
+  <div>
+    <label for="filename">Faila nosaukums:</label><br />
+    <input type="text" id="filename" placeholder="Ievadi faila nosaukumu (bez .xlsx)"
+      style="padding:8px; width:250px; border-radius:6px; border:1px solid #aaa;">
+  </div>
+
+  <!-- Workflow buttons -->
   <button class="btn" onclick="uploadFile(1)">Nosūtīt uz n8n (1)</button>
   <button class="btn" onclick="uploadFile(2)">Nosūtīt uz n8n (2)</button>
 
-  <div id="status"></div>
+  <!-- Download button -->
+  <button id="downloadBtn" class="btn" style="display:none">Lejupielādēt failu</button>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="loader"></div>
+    <p>Apstrādā failu...</p>
+  </div>
+
+  <div id="status" style="margin-top:20px; color:#444;"></div>
 
   <script>
+    let lastBlob = null;
+    let lastFileName = null;
+
+    // Show selected file name
+    document.getElementById("pdfFile").addEventListener("change", function () {
+      const name = this.files.length ? this.files[0].name : "Nav izvēlēts neviens fails";
+      document.getElementById("fileName").innerText = name;
+    });
+
     async function uploadFile(workflowNumber) {
       const fileInput = document.getElementById('pdfFile');
+      const filenameInput = document.getElementById('filename');
       const status = document.getElementById('status');
+      const loading = document.getElementById('loading');
+      const downloadBtn = document.getElementById('downloadBtn');
+
       if (!fileInput.files.length) {
         alert("Lūdzu izvēlies PDF failu!");
         return;
       }
 
+      const customName = filenameInput.value.trim() || "rezultats";
+      lastFileName = customName + ".xlsx";
+
       const formData = new FormData();
       formData.append("file", fileInput.files[0]);
 
-      const endpoint = workflowNumber === 1
-        ? "https://at-test-01.onrender.com/upload1"
-        : "https://at-test-01.onrender.com/upload2";
+      const endpoint =
+        workflowNumber === 1
+          ? "/upload1"
+          : "/upload2";
 
-      status.innerHTML = `<div class="loading"></div> Nosūta uz n8n #${workflowNumber}...`;
+      // Show loading
+      status.innerHTML = "";
+      loading.style.display = "block";
+      downloadBtn.style.display = "none";
 
       try {
         const response = await fetch(endpoint, { method: "POST", body: formData });
@@ -79,21 +144,31 @@
         }
 
         const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "rezultats.xlsx";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
+        lastBlob = blob;
 
-        status.innerHTML = "✅ Fails sagatavots un lejupielādēts!";
+        loading.style.display = "none";
+        status.innerHTML = "✅ Fails veiksmīgi apstrādāts!";
+        downloadBtn.style.display = "inline-block";
 
       } catch (err) {
+        loading.style.display = "none";
         status.innerHTML = "❌ Kļūda: " + err.message;
       }
     }
+
+    // Manual download
+    document.getElementById("downloadBtn").addEventListener("click", () => {
+      if (!lastBlob) return;
+
+      const url = URL.createObjectURL(lastBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = lastFileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
   </script>
+
 </body>
 </html>

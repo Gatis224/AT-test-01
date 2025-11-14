@@ -9,20 +9,22 @@ import { fileURLToPath } from "url";
 const app = express();
 app.use(cors());
 
-// === Sagatavo ceļu uz public mapi ===
+// === Static public folder ===
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, "public")));
 
-// === Multer konfigurācija ===
+// === Multer ===
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// === n8n Webhook URL ===
-const n8nUrl1 = "https://kaliz.app.n8n.cloud/webhook/f1efd29f-7e6c-42eb-af85-3df77f7f8633";
-const n8nUrl2 = "https://augstakatiesa.app.n8n.cloud/webhook/b02edf7f-3fe9-49fa-ae2e-0eaba980fa21";
+// === n8n Webhook URLs ===
+const n8nUrl1 =
+  "https://kaliz.app.n8n.cloud/webhook/f1efd29f-7e6c-42eb-af85-3df77f7f8633";
+const n8nUrl2 =
+  "https://augstakatiesa.app.n8n.cloud/webhook/b02edf7f-3fe9-49fa-ae2e-0eaba980fa21";
 
-// === Kopīga funkcija failu sūtīšanai uz n8n ===
+// === Shared handler function ===
 async function sendToN8N(req, res, n8nUrl) {
   try {
     const formData = new FormData();
@@ -32,8 +34,13 @@ async function sendToN8N(req, res, n8nUrl) {
     if (!response.ok) throw new Error(`n8n returned ${response.status}`);
 
     const arrayBuffer = await response.arrayBuffer();
-    res.setHeader("Content-Disposition", "attachment; filename=rezultats.xlsx");
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader("Content-Disposition", "attachment; filename=result.xlsx");
+
     res.send(Buffer.from(arrayBuffer));
   } catch (err) {
     console.error(err);
@@ -41,15 +48,21 @@ async function sendToN8N(req, res, n8nUrl) {
   }
 }
 
-// === API maršruti ===
-app.post("/upload1", upload.single("file"), (req, res) => sendToN8N(req, res, n8nUrl1));
-app.post("/upload2", upload.single("file"), (req, res) => sendToN8N(req, res, n8nUrl2));
+// === Proxy routes ===
+app.post("/upload1", upload.single("file"), (req, res) =>
+  sendToN8N(req, res, n8nUrl1)
+);
+app.post("/upload2", upload.single("file"), (req, res) =>
+  sendToN8N(req, res, n8nUrl2)
+);
 
-// === Fallbacks (lai / atgriež index.html) ===
+// === Serve frontend for any route ===
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// === Startē serveri ===
+// === Start ===
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Proxy darbojas http://localhost:${PORT}`));
+app.listen(PORT, () =>
+  console.log(`Proxy darbojas uz http://localhost:${PORT}`)
+);
